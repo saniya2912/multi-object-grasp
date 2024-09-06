@@ -43,6 +43,13 @@ class LeapNode_Poscontrol:
             except Exception:
                 self.dxl_client = DynamixelClient(motors, '/dev/ttyUSB2', 4000000)
                 self.dxl_client.connect()
+
+        self.dxl_client.set_torque_enabled(self.motors, False)
+        ADDR_SET_MODE = 11
+        LEN_SET_MODE = 1
+        self.dxl_client.sync_write(self.motors, np.ones(len(self.motors)) * 3, ADDR_SET_MODE, LEN_SET_MODE)
+        self.dxl_client.set_torque_enabled(self.motors, True)
+
         #Enables position-current control mode and the default parameters, it commands a position and then caps the current so the motors don't overload
         self.dxl_client.sync_write(motors, np.ones(len(motors))*5, 11, 1)
         self.dxl_client.set_torque_enabled(motors, True)
@@ -128,11 +135,13 @@ class LeapNode_Taucontrol():
                 self.dxl_client = DynamixelClient(self.motors, '/dev/ttyUSB2', 4000000)
                 self.dxl_client.connect()
 
+        self.dxl_client.set_torque_enabled(self.motors, False)
         # Set the control mode to Torque Control Mode
         # Address 11 typically corresponds to setting the operating mode, and 0 is Torque Control Mode
         ADDR_SET_MODE = 11
         LEN_SET_MODE = 1
-        self.dxl_client.sync_write(self.motors, np.ones(len(self.motors)) * 0, ADDR_SET_MODE, LEN_SET_MODE)
+        self.dxl_client.sync_write(self.motors, np.ones(len(self.motors))* 0, ADDR_SET_MODE, LEN_SET_MODE)
+        self.dxl_client.set_torque_enabled(self.motors, True)
 
         # Set the current limit for Torque Control (Goal Current)
         # Address 102 might correspond to Goal Current, and 2 bytes is the length
@@ -144,13 +153,22 @@ class LeapNode_Taucontrol():
     def set_desired_torque(self, desired_torque):
     # Convert desired torque to the corresponding current (depends on the motor's torque constant)
     # For example, assume a torque constant where 1 unit of torque corresponds to 1 unit of current
-        desired_current = desired_torque/0.51  # Adjust this based on your motor's torque constant
+        print("desired_torque:", desired_torque)
+
+        # Ensure all elements in the desired_torque are scalars
+        # For instance, you can flatten the list if necessary
+        desired_torque_flat = [float(torque) for torque in desired_torque]  # Convert all to floats
+
+        # Convert to NumPy array and calculate the current
+        desired_current = np.array([torque / 0.51 for torque in desired_torque_flat])
+        print("desired_current:", desired_current)  # Adjust this based on your motor's torque constant
 
         # Address for the Goal Current (or Torque) register
         ADDR_GOAL_CURRENT = 102
         LEN_GOAL_CURRENT = 2  # Length is usually 2 bytes
 
         # Write the desired current (which corresponds to the desired torque) to all motors
-        self.dxl_client.sync_write(self.motors, np.ones(len(self.motors)) * desired_current, ADDR_GOAL_CURRENT, LEN_GOAL_CURRENT)
+        self.dxl_client.sync_write(self.motors, desired_current*1000, ADDR_GOAL_CURRENT, LEN_GOAL_CURRENT)
+        
 
 
