@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import numpy as np
 
 from leap_hand_utils.dynamixel_client import *
@@ -18,7 +17,7 @@ I recommend you only query when necessary and below 90 samples a second.  Each o
 
 """
 ########################################################
-class LeapNode:
+class LeapNode_Poscontrol:
     def __init__(self):
         ####Some parameters
         # self.ema_amount = float(rospy.get_param('/leaphand_node/ema', '1.0')) #take only current
@@ -83,15 +82,75 @@ class LeapNode:
     def read_cur(self):
         return self.dxl_client.read_cur()
     
+    def cubic_trajectory(self,q0, v0, q1, v1, t0, t1, current_time):
+        # Ensure the current time is within the valid time range
+        current_time = np.clip(current_time, t0, t1)
+
+        # Define the matrix M for scalar time t0 and t1 (applies to all elements)
+        M = np.array([
+            [1, t0, t0**2, t0**3],
+            [0, 1, 2*t0, 3*t0**2],
+            [1, t1, t1**2, t1**3],
+            [0, 1, 2*t1, 3*t1**2]
+        ])
+
+        # Stack the q0, v0, q1, v1 values into a matrix (each as a 16-element array)
+        b = np.vstack([q0, v0, q1, v1])
+
+        # Solve for the coefficients a for each set of q0, v0, q1, v1
+        a = np.linalg.inv(M).dot(b)
+
+        # Compute position (qd), velocity (vd), and acceleration (ad) for each element
+        qd = a[0] + a[1]*current_time + a[2]*current_time**2 + a[3]*current_time**3
+        vd = a[1] + 2*a[2]*current_time + 3*a[3]*current_time**2
+        ad = 2*a[2] + 6*a[3]*current_time
+
+        return qd
     
-#init the node
-def main(**kwargs):
-    leap_hand = LeapNode()
-    while True:
-        leap_hand.set_allegro(np.zeros(16))
-        print("Position: " + str(leap_hand.read_pos()))
-        time.sleep(0.03)
+
+class LeapNode_Taucontrol():
+    def __init__(self):
+    # List of motor IDs
+        self.motors = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        
+        try:
+            # Try connecting to /dev/ttyUSB0
+            self.dxl_client = DynamixelClient(self.motors, '/dev/ttyUSB0', 4000000)
+            self.dxl_client.connect()
+        except Exception as e:
+            print("[DEBUG]", e)
+            # Try connecting to /dev/ttyUSB1 if /dev/ttyUSB0 fails
+            try:
+                self.dxl_client = DynamixelClient(self.motors, '/dev/ttyUSB1', 4000000)
+                self.dxl_client.connect()
+            except Exception:
+                # Try connecting to /dev/ttyUSB2 if /dev/ttyUSB1 fails
+                self.dxl_client = DynamixelClient(self.motors, '/dev/ttyUSB2', 4000000)
+                self.dxl_client.connect()
+
+        # Set the control mode to Torque Control Mode
+        # Address 11 typically corresponds to setting the operating mode, and 0 is Torque Control Mode
+        ADDR_SET_MODE = 11
+        LEN_SET_MODE = 1
+        self.dxl_client.sync_write(self.motors, np.ones(len(self.motors)) * 0, ADDR_SET_MODE, LEN_SET_MODE)
+
+        # Set the current limit for Torque Control (Goal Current)
+        # Address 102 might correspond to Goal Current, and 2 bytes is the length
+        ADDR_GOAL_CURRENT = 102
+        LEN_GOAL_CURRENT = 2
+        self.curr_lim = 350  # Adjust the current limit as needed (this is just an example)
+        self.dxl_client.sync_write(self.motors, np.ones(len(self.motors)) * self.curr_lim, ADDR_GOAL_CURRENT, LEN_GOAL_CURRENT)
+
+    def set_desired_torque(self, desired_torque):
+    # Convert desired torque to the corresponding current (depends on the motor's torque constant)
+    # For example, assume a torque constant where 1 unit of torque corresponds to 1 unit of current
+        desired_current = desired_torque/0.51  # Adjust this based on your motor's torque constant
+
+        # Address for the Goal Current (or Torque) register
+        ADDR_GOAL_CURRENT = 102
+        LEN_GOAL_CURRENT = 2  # Length is usually 2 bytes
+
+        # Write the desired current (which corresponds to the desired torque) to all motors
+        self.dxl_client.sync_write(self.motors, np.ones(len(self.motors)) * desired_current, ADDR_GOAL_CURRENT, LEN_GOAL_CURRENT)
 
 
-if __name__ == "__main__":
-    main()
