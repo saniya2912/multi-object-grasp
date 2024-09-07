@@ -49,7 +49,8 @@ v1 = np.zeros(16)  # final velocity (array of zeros)
 t0 = 5 # initial time
 t1 = 10
 t2=20
-t3=50
+t3=30
+t4=40
 # q2=np.array([a1,b1,c1,d1, 0,0,0,0,0,0,0,0,e1,f1,g1,h1])
 # v2=np.zeros(16)
 
@@ -60,11 +61,11 @@ while time.time() - start_time < t0:
     time.sleep(0.03)
 
 while time.time() - start_time < t1 and time.time()>t0:
-    current_time = time.time() - start_time
+    current_time=time.time()
     # Ensure the current time falls within [t0, t1]
-    if t0 <= current_time <= t1:
-        qd = leap_pos.cubic_trajectory(q0, v0, q1, v1, t0, t1, current_time)
-        leap_pos.set_allegro(qd)
+    
+    qd = leap_pos.cubic_trajectory(q0, v0, q1, v1, t0, t1, current_time)
+    leap_pos.set_allegro(qd)
     # time.sleep(0.03)
 
 # while time.time() - start_time < t2 and time.time()>t1:
@@ -80,14 +81,20 @@ leap_torque=LeapNode_Taucontrol()
 #     leap_pos.set_allegro(qd)
 
 # Apply torque
-while time.time() - start_time < t2 and time.time() > t1:
+while time.time() - start_time < 15 and time.time() > t1:
 #while True:
     leap_torque.set_desired_torque(Tau_index+ [0,-0.1,0,0,0,-0.1,0,0]+Tau_thumb)
     
     print("Torque given:", Tau_index+ [0,-0.02,0,0,0,-0.02,0,0]+Tau_thumb)
 
+# while time.time() - start_time < 20 and time.time() > 15:
+#     Tau_index[0]=0.006
+#     Tau_thumb[0]=0.006
 
-# leap_pos = LeapNode_Poscontrol()
+#     leap_torque.set_desired_torque(Tau_index+ [0,-0.1,0,0,0,-0.1,0,0]+Tau_thumb)
+    
+#     print("Torque given:", Tau_index+ [0,-0.1,0,0,0,-0.1,0,0]+Tau_thumb)
+# # leap_pos = LeapNode_Poscontrol()
 # while time.time() - start_time < t3 and time.time() > t2:
 #     leap_pos.set_allegro(np.zeros(16))
 # #while True:
@@ -99,8 +106,8 @@ scale_factor = 0.99  # Reduce by 1% in each loop iteration
 force_reduction_time = 20  # Total time for force reduction
 start_time = time.time()
 
-while time.time() - start_time < t3 and time.time() > t2:
-    
+while time.time() - start_time < 30 and time.time() > 15:
+    print("retract1")
     # Gradually reduce the forces
     F_index = scale_factor * F_index
     F_thumb = scale_factor * F_thumb
@@ -115,14 +122,67 @@ while time.time() - start_time < t3 and time.time() > t2:
     Tau_index = [float(torque[0]) for torque in Tau_index]
     Tau_thumb = [float(torque[0]) for torque in Tau_thumb]
 
-    Tau_index[0]=0.005
-    Tau_thumb[0]=0.005
+    # Tau_index[0]=0.006
+    # Tau_thumb[0]=0.006
 
     # Apply the updated torque
     leap_torque.set_desired_torque(Tau_index + [0, -0.1, 0, 0, 0, -0.1, 0, 0] + Tau_thumb)
 
     # Print updated torque values for debugging
-    print("Torque given:", Tau_index + [0, -0.02, 0, 0, 0, -0.02, 0, 0] + Tau_thumb)
 
     # Sleep to control the loop rate (adjust as needed)
     time.sleep(0.03)
+
+# force_step_index = np.array([0.0005, 0, 0, 0, 0, 0])  # Change this value as needed
+# force_step_thumb = np.array([-0.0005, 0, 0, 0, 0, 0])  # Negative direction later
+
+# # Time setup for the force reduction loop
+# force_reduction_time = 20  # Total time for force reduction
+
+
+# while time.time() - start_time < t3 and time.time() > t2:
+#     # Incrementally reduce the forces
+#     F_index = F_index - force_step_index  # Subtract force step for index
+#     F_thumb = F_thumb - force_step_thumb  # Subtract force step for thumb
+
+#     # Recompute the torque values
+#     Tau_index = index_J.T @ F_index
+#     Tau_index[[0, 1]] = Tau_index[[1, 0]]  # Swap first two elements as before
+
+#     Tau_thumb = thumb_J.T @ F_thumb
+
+#     # Convert torque values to float
+#     Tau_index = [float(torque[0]) for torque in Tau_index]
+#     Tau_thumb = [float(torque[0]) for torque in Tau_thumb]
+
+#     # Apply the updated torque
+#     leap_torque.set_desired_torque(Tau_index + [0, -0.02, 0, 0, 0, -0.02, 0, 0] + Tau_thumb)
+
+#     # Print updated torque values for debugging
+#     print("Torque given:", Tau_index + [0, -0.02, 0, 0, 0, -0.02, 0, 0] + Tau_thumb)
+
+#     # Sleep to control the loop rate (adjust as needed)
+#     time.sleep(0.03)
+# while time.time() - start_time < t4 and time.time() > t3:
+#     print("retract2")
+#     # Gradually reduce the forces
+#     F_index = np.reshape([0.05, 0, 0, 0, 0, 0], [6, 1])
+#     F_thumb =np.reshape([0,-0.05, 0, 0, 0, 0], [6, 1])
+#     # Recompute the torque values
+#     Tau_index = index_J.T @ F_index
+#     Tau_index[[0, 1]] = Tau_index[[1, 0]]
+
+#     Tau_thumb = thumb_J.T @ F_thumb
+
+#     # Convert torque values to float
+#     Tau_index = [float(torque[0]) for torque in Tau_index]
+#     Tau_thumb = [float(torque[0]) for torque in Tau_thumb]
+
+#     # Apply the updated torque
+#     leap_torque.set_desired_torque(Tau_index + [0, -0.1, 0, 0, 0, -0.1, 0, 0] + Tau_thumb)
+
+#     # Print updated torque values for debugging
+
+#     # Sleep to control the loop rate (adjust as needed)
+#     time.sleep(0.03)
+
