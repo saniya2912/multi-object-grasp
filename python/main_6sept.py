@@ -21,9 +21,9 @@ class LeapNode_Poscontrol:
     def __init__(self):
         ####Some parameters
         # self.ema_amount = float(rospy.get_param('/leaphand_node/ema', '1.0')) #take only current
-        self.kP = 600
+        self.kP = 250
         self.kI = 0
-        self.kD = 200
+        self.kD = 25
         self.kP_slow = 300
         self.kI = 0
         self.kD = 200
@@ -60,7 +60,7 @@ class LeapNode_Poscontrol:
         self.dxl_client.sync_write([0,4,8], np.ones(3) * (self.kD * 0.75), 80, 2) # Dgain damping for side to side should be a bit less
         #Max at current (in unit 1ma) so don't overheat and grip too hard #500 normal or #350 for lite
         self.dxl_client.sync_write(motors, np.ones(len(motors)) * self.curr_lim, 102, 2)
-        self.dxl_client.write_desired_pos(self.motors, self.curr_pos)
+        #self.dxl_client.write_desired_pos(self.motors, self.curr_pos)
 
     #Receive LEAP pose and directly control the robot
     def set_leap(self, pose):
@@ -82,6 +82,10 @@ class LeapNode_Poscontrol:
     #read position
     def read_pos(self):
         return self.dxl_client.read_pos()
+    
+    def read_pos_leap(self):
+        pos=self.dxl_client.read_pos()-(np.ones(16)*3.14)
+        return pos
     #read velocity
     def read_vel(self):
         return self.dxl_client.read_vel()
