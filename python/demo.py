@@ -38,24 +38,29 @@ print(pos)
 # except KeyboardInterrupt:
 #     print("Position reading stopped.")
 
-def J(model,data,site_name):
-        # model=mujoco.MjModel.from_xml_path(xml_path)
-        # data = mujoco.MjData(model)
-        mujoco.mj_forward(model, data)
-        jacp = np.zeros((3, model.nv))  # translation jacobian
-        jacr = np.zeros((3, model.nv)) 
 
-        site_id=model.site(site_name).id
-        mujoco.mj_jacSite(model, data, jacp, jacr, site_id)
 
-        return np.vstack((jacp, jacr))
 
-tertiary_model_path = '/home/saniya/leap_hand_mujoco/leap_hand_mujoco/model/leap hand/tertiary.xml'
 
-tertiary_m = mujoco.MjModel.from_xml_path(tertiary_model_path)
-tertiary_d = mujoco.MjData(tertiary_m)
 
-tertiary_d.qpos=[1.4558066, 0.01386438,  0.7240976,   0.64433061]
-mujoco.mj_forward(tertiary_m, tertiary_d)
-tertiary_J=J(tertiary_m,tertiary_d,'contact_tertiary')
-print(tertiary_J)
+# def J(model,data,site_name):
+#         # model=mujoco.MjModel.from_xml_path(xml_path)
+#         # data = mujoco.MjData(model)
+#         mujoco.mj_forward(model, data)
+#         jacp = np.zeros((3, model.nv))  # translation jacobian
+#         jacr = np.zeros((3, model.nv)) 
+
+#         site_id=model.site(site_name).id
+#         mujoco.mj_jacSite(model, data, jacp, jacr, site_id)
+
+#         return np.vstack((jacp, jacr))
+
+# tertiary_model_path = '/home/saniya/LEAP/leap_hand_mujoco/model/leap hand/tertiary.xml'
+
+# tertiary_m = mujoco.MjModel.from_xml_path(tertiary_model_path)
+# tertiary_d = mujoco.MjData(tertiary_m)
+
+# tertiary_d.qpos=[1.4558066, 0.01386438,  0.7240976,   0.64433061]
+# mujoco.mj_forward(tertiary_m, tertiary_d)
+# tertiary_J=J(tertiary_m,tertiary_d,'contact_tertiary')
+# print(tertiary_J)

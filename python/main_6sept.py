@@ -157,7 +157,7 @@ class LeapNode_Taucontrol():
     def set_desired_torque(self, desired_torque):
     # Convert desired torque to the corresponding current (depends on the motor's torque constant)
     # For example, assume a torque constant where 1 unit of torque corresponds to 1 unit of current
-        print("desired_torque:", desired_torque)
+        
 
         # Ensure all elements in the desired_torque are scalars
         # For instance, you can flatten the list if necessary
@@ -165,7 +165,7 @@ class LeapNode_Taucontrol():
 
         # Convert to NumPy array and calculate the current
         desired_current = np.array([torque / 0.51 for torque in desired_torque_flat])
-        print("desired_current:", desired_current)  # Adjust this based on your motor's torque constant
+        # Adjust this based on your motor's torque constant
 
         # Address for the Goal Current (or Torque) register
         ADDR_GOAL_CURRENT = 102
