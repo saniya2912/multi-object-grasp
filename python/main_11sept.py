@@ -16,21 +16,9 @@ I recommend you only query when necessary and below 90 samples a second.  Each o
 #180 is flat out for the index, middle, ring, fingers, and positive is closing more and more.
 
 """
-########################################################
-class LeapNode_Poscontrol:
+class init_blah:
     def __init__(self):
-        ####Some parameters
-        # self.ema_amount = float(rospy.get_param('/leaphand_node/ema', '1.0')) #take only current
-        self.kP = 250
-        self.kI = 0
-        self.kD = 25
-        self.kP_slow = 300
-        self.kI = 0
-        self.kD = 200
-        self.curr_lim = 350
-        self.prev_pos = self.pos = self.curr_pos = lhu.allegro_to_LEAPhand(np.zeros(16))
-           
-        #You can put the correct port here or have the node auto-search for a hand at the first 3 ports.
+    #You can put the correct port here or have the node auto-search for a hand at the first 3 ports.
         self.motors = motors = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
         try:
             self.dxl_client = DynamixelClient(motors, '/dev/ttyUSB0', 4000000)
@@ -43,6 +31,36 @@ class LeapNode_Poscontrol:
             except Exception:
                 self.dxl_client = DynamixelClient(motors, '/dev/ttyUSB2', 4000000)
                 self.dxl_client.connect()
+########################################################
+    def read_pos(self):
+        return self.dxl_client.read_pos()
+    
+    def read_pos_leap(self):
+        pos=self.dxl_client.read_pos()-(np.ones(16)*3.14)
+        return pos
+    #read velocity
+    def read_vel(self):
+        return self.dxl_client.read_vel()
+    #read current
+    def read_cur(self):
+        return self.dxl_client.read_cur()
+
+init_ins = init_blah()
+
+class LeapNode_Poscontrol:
+    def __init__(self):
+        ####Some parameters
+        # self.ema_amount = float(rospy.get_param('/leaphand_node/ema', '1.0')) #take only current
+        self.kP = 250
+        self.kI = 0
+        self.kD = 25
+        self.kP_slow = 300
+        self.kI = 0
+        self.kD = 200
+        self.curr_lim = 350
+        self.prev_pos = self.pos = self.curr_pos = lhu.allegro_to_LEAPhand(np.zeros(16))
+        self.motors = motors = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        self.dxl_client=init_ins.dxl_client
 
         self.dxl_client.set_torque_enabled(self.motors, False)
         ADDR_SET_MODE = 11
@@ -119,26 +137,13 @@ class LeapNode_Poscontrol:
         return qd
     
 
-class LeapNode_Taucontrol():
+class LeapNode_Taucontrol:
     def __init__(self):
     # List of motor IDs
         self.motors = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-        
-        try:
-            # Try connecting to /dev/ttyUSB0
-            self.dxl_client = DynamixelClient(self.motors, '/dev/ttyUSB0', 4000000)
-            self.dxl_client.connect()
-        except Exception as e:
-            print("[DEBUG]", e)
-            # Try connecting to /dev/ttyUSB1 if /dev/ttyUSB0 fails
-            try:
-                self.dxl_client = DynamixelClient(self.motors, '/dev/ttyUSB1', 4000000)
-                self.dxl_client.connect()
-            except Exception:
-                # Try connecting to /dev/ttyUSB2 if /dev/ttyUSB1 fails
-                self.dxl_client = DynamixelClient(self.motors, '/dev/ttyUSB2', 4000000)
-                self.dxl_client.connect()
+        self.dxl_client=init_ins.dxl_client
 
+        
         self.dxl_client.set_torque_enabled(self.motors, False)
         # Set the control mode to Torque Control Mode
         # Address 11 typically corresponds to setting the operating mode, and 0 is Torque Control Mode
